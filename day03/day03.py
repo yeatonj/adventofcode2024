@@ -3,7 +3,7 @@
 
 import re
 
-f = open('data_adj.txt')
+f = open('data.txt')
 
 total_pt1 = 0
 total_pt2 = 0

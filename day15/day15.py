@@ -99,10 +99,17 @@ def check_pt2_move(loc, map, already_checked, dir):
         if (map.get(check_coord) == '#'):
             return False
         elif (map.get(check_coord) == '.'):
+            already_checked.update({check_coord:True})
+            already_checked.update({loc:True})
             return True
         else:
             # must be a box, see if the box can move
-            return check_pt2_move(check_coord, map, already_checked, dir)
+            res = check_pt2_move(check_coord, map, already_checked, dir)
+            if (res):
+                already_checked.update({loc:True})
+                return True
+            else:
+                return False
     elif (map.get(loc) == '['):
         # left side of a box, check right side first
         right_loc = (loc[0], loc[1] + 1)
@@ -116,6 +123,7 @@ def check_pt2_move(loc, map, already_checked, dir):
                 already_checked.update({right_loc:False})
                 return False
             elif (map.get(check_coord) == '.'):
+                already_checked.update({check_coord:True})
                 already_checked.update({loc:True})
                 return True
             else:
@@ -134,6 +142,7 @@ def check_pt2_move(loc, map, already_checked, dir):
             already_checked.update({left_loc:False})
             return False
         elif (map.get(check_coord) == '.'):
+            already_checked.update({check_coord:True})
             already_checked.update({loc:True})
             if (check_pt2_move(left_loc, map, already_checked, dir)):
                 return True
@@ -144,7 +153,11 @@ def check_pt2_move(loc, map, already_checked, dir):
             # another box...
             if (check_pt2_move(check_coord, map, already_checked, dir)):
                 already_checked.update({loc:True})
-                return True
+                if (check_pt2_move(left_loc, map, already_checked, dir)):
+                    return True
+                else:
+                    already_checked.update({loc:False})
+                    return False
             else:
                 already_checked.update({loc:False})
                 return False
@@ -160,51 +173,28 @@ def check_pt2_lateral_move(loc, map, dir):
     else:
         return check_pt2_lateral_move((loc[0], loc[1] + 1), map, dir)
     
-def execute_pt2_move(loc, map, prev_loc, already_moved, dir):
-    if (already_moved.get(loc)):
-        return
+def execute_pt2_move(start_loc, map, prev_checked, dir):
     if (dir == '<' or dir == '>'):
-        return execute_pt2_lateral_move(loc, map, prev_loc, dir)
+        return execute_pt2_lateral_move(start_loc, map, 0, dir)
     if (dir == '^'):
-        next_loc = (loc[0] - 1, loc[1])
+        next_loc = (start_loc[0] - 1, start_loc[1])
     else:
-        next_loc = (loc[0] + 1, loc[1])
-    if (prev_loc == 0):
-        execute_pt2_move(next_loc, map, loc, already_moved, dir)
-        map.update({loc:'.'})
-        return next_loc
-    # Base case
-    if (map.get(loc) == '.'):
-        already_moved.update({loc:True})
-        map.update({loc:map.get(prev_loc)})
-        return
-    # Otherwise, we are a box
-    if (map.get(loc) == '['):
-        right_loc = (loc[0], loc[1] + 1)
+        next_loc = (start_loc[0] + 1, start_loc[1])
+    # copy the map
+    map_copy = {}
+    for loc in map:
+        map_copy.update({loc:map.get(loc)})
+    for loc in prev_checked:
         if (dir == '^'):
-            right_prev_loc = (loc[0] + 1, loc[1] + 1)
-            next_loc = (loc[0] - 1, loc[1])
+            prev_loc = (loc[0] + 1, loc[1])
         else:
-            right_prev_loc = (loc[0] - 1, loc[1] + 1)
-            next_loc = (loc[0] + 1, loc[1])
-        execute_pt2_move(next_loc, map, loc, already_moved, dir)
-        execute_pt2_move(right_loc, map, right_prev_loc, already_moved, dir)
-        already_moved.update({loc:True})
-        map.update({loc:map.get(prev_loc)})
-        return
-    else:
-        left_loc = (loc[0], loc[1] - 1)
-        left_prev_loc = '.'
-        if (dir == '^'):
-            left_prev_loc = (loc[0] + 1, loc[1] - 1)
-            next_loc = (loc[0] - 1, loc[1])
+            prev_loc = (loc[0] - 1, loc[1])
+
+        if (prev_checked.get(prev_loc) == None):
+            map.update({loc:'.'})
         else:
-            left_prev_loc = (loc[0] - 1, loc[1] - 1)
-            next_loc = (loc[0] + 1, loc[1])
-        execute_pt2_move(next_loc, map, loc, already_moved, dir)
-        already_moved.update({loc:True})
-        map.update({loc:map.get(prev_loc)})
-        execute_pt2_move(left_loc, map, left_prev_loc, already_moved, dir)
+            map.update({loc:map_copy.get(prev_loc)})
+    return next_loc
 
 
 
@@ -228,8 +218,7 @@ def pt2_round(loc, map, dir):
     already_checked = {}
     if (check_pt2_move(loc, map, already_checked, dir)):
         # find direction and move
-        already_moved = {}
-        return execute_pt2_move(loc, map, 0, already_moved, dir)
+        return execute_pt2_move(loc, map, already_checked, dir)
     else:
         return loc
     
@@ -243,7 +232,7 @@ def find_score_pt2(map, max_row, max_col):
         
 if __name__ == "__main__":
     filename = 'data_test.txt'
-    # filename = 'data.txt'
+    filename = 'data.txt'
     f = open(filename)
 
     map = {}
@@ -313,9 +302,9 @@ if __name__ == "__main__":
 
 
 
-    for r in range(row):
-            for c in range(col):
-                print(map.get((r, c)), end='')
-            print()
+    # for r in range(row):
+    #         for c in range(col):
+    #             print(map.get((r, c)), end='')
+    #         print()
 
     print(find_score_pt2(map, row, col))

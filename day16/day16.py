@@ -2,7 +2,7 @@
 # For Advent of Code 2024
 
 
-def dfs(start, goal, map):
+def dfs(start, goal, map, best_seats):
     # N E S W == 0 1 2 3, always explore in that order
     # Stack holds [loc, dir, score, to_explore]
     stack = [[start, 1, 0, 0]]
@@ -22,6 +22,12 @@ def dfs(start, goal, map):
         if (cur_loc == goal):
             if ((min_score == -1) or (score < min_score)):
                 min_score = score
+                best_seats.clear()
+                for entry in stack:
+                    best_seats.update({entry[0]:True})
+            elif (score == min_score):
+                for entry in stack:
+                    best_seats.update({entry[0]:True})
             level_done = True
         # If we are currently on a wall, skip this iteration
         if (map.get(cur_loc) == '#'):
@@ -33,9 +39,9 @@ def dfs(start, goal, map):
         if (visited.get(cur_loc) != None):
             level_done = True
         # Finally, if we have already reached this point with a lower possible score, ignore
-        cur_min_to_reach = min_to_reach.get(cur_loc)
+        cur_min_to_reach = min_to_reach.get((cur_loc, dir))
         if ((cur_min_to_reach == None) or (score <= cur_min_to_reach)):
-            min_to_reach.update({cur_loc:score})
+            min_to_reach.update({(cur_loc,dir):score})
         else:
             level_done = True
 
@@ -111,8 +117,8 @@ if __name__ == "__main__":
     f.close()
 
     min_score = []
+    best_seats = {}
 
-    print(dfs(start, goal, map))
-    # 149568 is too high
-
+    print(dfs(start, goal, map, best_seats))
+    print(len(best_seats))
 

@@ -1,8 +1,14 @@
-# Written by Josh Yeaton on 1/20/24
+# Written by Josh Yeaton on 1/21/24
 # For Advent of Code 2024
 
 # general idea - represent keypads as graphs
 import collections
+
+NUMPAD = {(0,0):'7', (0,1):'8', (0,2):'9', (1,0):'4', (1,1):'5', (1,2):'6', (2,0):'1', (2,1):'2', (2,2):'3', (3,1):'0', (3,2):'A'}
+KEYPAD = {(0,1):'^', (0,2):'A', (1,0):'<', (1,1):'v', (1,2):'>'}
+
+NUMPAD_START = (3,2)
+KEYPAD_START = (0,2)
 
 def pad_bfs(layout, start_loc, goal_key):
     DIRS = ['^', '>', 'v', '<']
@@ -101,9 +107,25 @@ def find_min_turns(poss_res):
                     break
     return poss_res[best_ind]
 
-def find_len_at_depth(char, depth, mem_dic):
-    
-    return 0
+def find_len_at_depth(char, cur_loc, depth, mem_dic):
+    # base case
+    if (depth == 0):
+        return (1, cur_loc)
+    elif (mem_dic.get((char, cur_loc, depth)) != None):
+        return mem_dic.get((char, cur_loc, depth))
+    # do the calculation
+    subtotal = 0
+    next_seq_kp = ''
+    poss_res = pad_bfs(KEYPAD, cur_loc, char)
+    (new_loc, sub_seq) = find_min_turns(poss_res)
+    next_seq_kp += (sub_seq + 'A')
+    sub_loc = KEYPAD_START
+    for c in next_seq_kp:
+        (res, sub_loc) = find_len_at_depth(c, sub_loc, depth - 1, mem_dic)
+        subtotal += res
+    mem_dic.update({(char, cur_loc, depth): (subtotal, new_loc)})
+
+    return (subtotal, new_loc)
 
 if __name__ == "__main__":
     filename = 'data_test.txt'
@@ -117,19 +139,14 @@ if __name__ == "__main__":
         codes.append(l) 
     f.close()
 
-    NUMPAD = {(0,0):'7', (0,1):'8', (0,2):'9', (1,0):'4', (1,1):'5', (1,2):'6', (2,0):'1', (2,1):'2', (2,2):'3', (3,1):'0', (3,2):'A'}
-    KEYPAD = {(0,1):'^', (0,2):'A', (1,0):'<', (1,1):'v', (1,2):'>'}
 
-    NUMPAD_START = (3,2)
-    KEYPAD_START = (0,2)
 
     score = 0
     reps = 2 # part 1
-    # reps = 25 # part 2
+    reps = 25 # part 2
 
     # Layer 1, robot 1 to numpad robot
     for code in codes:
-        print(code)
         # Commands for Numpad
         cur_loc = NUMPAD_START
         seq_np = ''
@@ -137,22 +154,16 @@ if __name__ == "__main__":
             poss_res = pad_bfs(NUMPAD, cur_loc, input)
             (cur_loc, sub_seq) = find_min_turns(poss_res)
             seq_np += (sub_seq + 'A')
-        # print(seq_np)
 
         cur_seq = seq_np
         seq_dic = {}
-        for i in range(reps):
-            print(cur_seq)
-            cur_loc = KEYPAD_START
-            next_seq_kp = ''
-            for input in cur_seq:
-                poss_res = pad_bfs(KEYPAD, cur_loc, input)
-                (cur_loc, sub_seq) = find_min_turns(poss_res)
-                next_seq_kp += (sub_seq + 'A')
-            cur_seq = next_seq_kp
-            print(cur_seq)
+        total_len = 0
+        cur_loc = KEYPAD_START
+        for input in cur_seq:
+            (intermediate_len, cur_loc) = find_len_at_depth(input, cur_loc, reps, seq_dic)
+            total_len += intermediate_len
 
-        score += (len(cur_seq) * int(code[:-1]))
-        print()
+        intermediate_score = (total_len * int(code[:-1]))
+        score += (total_len * int(code[:-1]))
 
     print(score)
